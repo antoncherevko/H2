@@ -151,6 +151,7 @@ async def cmd_companies(message: types.Message):
     await message.answer("📡 Fetching latest company news...")
     all_items = []
     for company in companies:
+        await asyncio.sleep(1)  # Задержка 1 секунда между компаниями
         try:
             # Поиск в NewsAPI
             articles = await fetch_newsapi(f'hydrogen AND "{company}"', page_size=3)
@@ -170,12 +171,13 @@ async def cmd_companies(message: types.Message):
                 g["company"] = company
             all_items += google_items
 
-            # Поиск в LinkedIn (если публично доступно)
+            # Поиск в LinkedIn
             linkedin_items = await scrape_linkedin_posts(company)
             for l in linkedin_items:
                 l["company"] = company
             all_items += linkedin_items
-        except Exception:
+        except Exception as e:
+            print(f"Error processing {company}: {e}")
             continue
 
     # Убираем дубликаты
@@ -186,7 +188,7 @@ async def cmd_companies(message: types.Message):
         return
 
     # Формируем и отправляем
-    for it in all_items[:15]:  # Ограничим, чтобы не заспамить
+    for it in all_items[:15]:
         title = it.get("title") or "No title"
         url = it.get("url") or ""
         summary = it.get("summary") or ""
