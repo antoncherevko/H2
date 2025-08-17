@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     libopenblas-dev \
     liblapack-dev \
-    libatlas-base-dev \
     gfortran \
     && rm -rf /var/lib/apt/lists/*
 
