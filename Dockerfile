@@ -9,6 +9,6 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt --only-binary :all:
+RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 CMD ["python", "bot.py"]
