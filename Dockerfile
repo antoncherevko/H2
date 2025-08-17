@@ -16,9 +16,9 @@ WORKDIR /app
 # Копируем зависимости
 COPY requirements.txt .
 
-# Обновляем pip и устанавливаем зависимости
+# Обновляем pip и устанавливаем зависимости, используя только бинарные файлы
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt --only-binary :all:
 
 # Копируем весь проект
 COPY . .
