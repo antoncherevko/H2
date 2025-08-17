@@ -1,4 +1,9 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
+
+# Указываем альтернативное зеркало Debian
+RUN echo "deb http://deb.debian.org/debian bullseye main" > /etc/apt/sources.list && \
+    echo "deb http://deb.debian.org/debian bullseye-updates main" >> /etc/apt/sources.list && \
+    echo "deb http://deb.debian.org/debian-security bullseye-security main" >> /etc/apt/sources.list
 
 WORKDIR /app
 
