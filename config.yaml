@@ -12,6 +12,14 @@ companies:
   - Peric
   - HiiROC
   - Accelera Cummins
+  - Nel ASA
+  - Thyssenkrupp Nucera
+  - ITM Power
+  - Atawey
+  - Ivys
+  - TOPSOE
+  - HydrogenPro
+  - Maximator
 
 # Example RSS feeds (you can extend/change)
 rss_feeds:
@@ -27,6 +35,7 @@ keywords:
   - green hydrogen
   - blue hydrogen
   - electrolyzer
+  - electrolyser
   - pem
   - alkaline
   - soec
@@ -52,3 +61,14 @@ keywords:
   - capacity
   - mw
   - gw
+  - project
+  - projects
+  - investments
+  - CAPEX
+  - ptx
+  - power to X
+  - p2x
+  - pressure swing adsorption
+  - PSA
+  - purification
+  
