@@ -1,4 +1,7 @@
-import os, asyncio, yaml, hashlib
+import os
+import asyncio
+import yaml
+import hashlib
 from datetime import datetime, timezone
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -13,6 +16,7 @@ NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")  # Добавьте в .env
 GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")  # Добавьте в .env
+HTTP_PROXY = os.getenv("HTTP_PROXY")  # Добавьте в .env, например: http://username:password@proxy_ip:port
 
 if not BOT_TOKEN:
     raise RuntimeError("Set TELEGRAM_BOT_TOKEN in environment")
@@ -53,25 +57,39 @@ async def google_search(query, num=5):
             return results
 
 async def scrape_linkedin_posts(company):
-    """Парсинг публичных постов с LinkedIn (простой пример, настройте селекторы)"""
-    url = f"https://www.linkedin.com/company/{company.lower()}/posts/?feedView=all"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            if resp.status != 200:
-                return []
-            html = await resp.text()
-            soup = BeautifulSoup(html, "html.parser")
-            results = []
-            for post in soup.find_all("div", class_="feed-shared-update-v2"):  # Пример селектора, может измениться
-                title = post.find("span", class_="feed-shared-actor__name") or "No title"
-                title = title.text.strip() if title else "No title"
-                summary = post.find("p", class_="feed-shared-text") or ""
-                summary = summary.text.strip() if summary else ""
-                link = post.find("a", class_="app-aware-link") or ""
-                link = link.get("href") if link else ""
-                if "hydrogen" in summary.lower() or "h2" in summary.lower():
-                    results.append({"title": title, "summary": summary, "url": link})
-            return results[:5]
+    """Парсинг публичных постов с LinkedIn с задержкой и прокси"""
+    url = f"https://www.linkedin.com/company/{company.lower().replace(' ', '-')}/posts/?feedView=all"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9"
+    }
+    await asyncio.sleep(10)  # Задержка 10 секунды перед запросом
+    try:
+        async with aiohttp.ClientSession(
+            headers=headers,
+            connector=aiohttp.TCPConnector(ssl=False) if not HTTP_PROXY else None,
+            connector_owner=True
+        ) as session:
+            async with session.get(url, proxy=HTTP_PROXY) as resp:
+                if resp.status != 200:
+                    print(f"Failed to fetch LinkedIn for {company}: Status {resp.status}")
+                    return []
+                html = await resp.text()
+                soup = BeautifulSoup(html, "html.parser")
+                results = []
+                for post in soup.find_all("div", class_="feed-shared-update-v2"):
+                    title = post.find("span", class_="feed-shared-actor__name-hover") or post.find("span", class_="feed-shared-actor__name")
+                    title = title.text.strip() if title else "No title"
+                    summary = post.find("div", class_="feed-shared-text") or post.find("p")
+                    summary = summary.text.strip() if summary else ""
+                    link = post.find("a", class_="app-aware-link") or ""
+                    link = link.get("href") if link else ""
+                    if "hydrogen" in summary.lower() or "h2" in summary.lower():
+                        results.append({"title": title, "summary": summary, "url": link})
+                return results[:5]
+    except Exception as e:
+        print(f"Error scraping LinkedIn for {company}: {e}")
+        return []
 
 @dp.message(Command("linkedin"))
 async def cmd_linkedin(message: types.Message):
@@ -79,7 +97,7 @@ async def cmd_linkedin(message: types.Message):
     if len(args) < 2:
         await message.answer("Usage: /linkedin Linde")
         return
-    company = args[1].lower()
+    company = args[1]
     await message.answer(f"Searching LinkedIn for {company} hydrogen news...")
     items = await scrape_linkedin_posts(company)
     await format_and_send_list(message.chat.id, items, limit=5)
