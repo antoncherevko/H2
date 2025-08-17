@@ -1,16 +1,19 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
-# Указываем альтернативное зеркало Debian
-RUN echo "deb http://deb.debian.org/debian bullseye main" > /etc/apt/sources.list && \
-    echo "deb http://deb.debian.org/debian bullseye-updates main" >> /etc/apt/sources.list && \
-    echo "deb http://deb.debian.org/debian-security bullseye-security main" >> /etc/apt/sources.list
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3-dev \
+    libopenblas-dev \
+    liblapack-dev \
+    gfortran \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY requirements.txt .
 
 RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt --only-binary :all:
+RUN pip install --no-cache-dir -r requirements.txt 
 
 COPY . .
 
