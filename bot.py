@@ -32,6 +32,55 @@ async def format_and_send_list(chat_id, items, limit=5):
         text = f"📰 <b>{title}</b>\n{', '.join(topics)}\n{summary}\n{url}"
         await bot.send_message(chat_id, text, parse_mode='HTML')
 
+async def google_search(query, num=5):
+    """Поиск в Google через Custom Search API"""
+    if not GOOGLE_API_KEY or not GOOGLE_CSE_ID:
+        return []
+    url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={GOOGLE_API_KEY}&cx={GOOGLE_CSE_ID}&num={num}"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            data = await resp.json()
+            results = []
+            for item in data.get("items", []):
+                results.append({
+                    "title": item["title"],
+                    "summary": item.get("snippet"),
+                    "url": item["link"]
+                })
+            return results
+
+@dp.message(Command("search"))
+async def cmd_search(message: types.Message):
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        await message.answer("Usage: /search hydrogen storage")
+        return
+    query = args[1]
+    await message.answer(f"🔎 Searching the web: {query}")
+    items = await google_search(query, num=6)
+    await format_and_send_list(message.chat.id, items, limit=6)
+
+async def scrape_press_releases(url):
+    """Пример простого парсинга страницы"""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            html = await resp.text()
+            soup = BeautifulSoup(html, "html.parser")
+            results = []
+            for a in soup.select("a"):  # Настроить под конкретный сайт
+                title = a.get_text().strip()
+                link = a.get("href")
+                if title and link:
+                    results.append({"title": title, "url": link})
+            return results[:10]
+
+@dp.message(Command("press"))
+async def cmd_press(message: types.Message):
+    await message.answer("Fetching press releases...")
+    url = "https://www.linde.com/news"  # пример
+    items = await scrape_press_releases(url)
+    await format_and_send_list(message.chat.id, items, limit=6)
+
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     await message.answer(
