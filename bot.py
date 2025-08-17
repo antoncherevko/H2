@@ -2,6 +2,7 @@ import os
 import asyncio
 import yaml
 import hashlib
+import re
 from datetime import datetime, timezone
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -35,9 +36,23 @@ async def format_and_send_list(chat_id, items, limit=5):
         title = it.get("title") or "No title"
         url = it.get("url") or it.get("link") or ""
         summary = it.get("summary") or ""
+        # Очистка неподдерживаемых HTML-тегов
+        title = re.sub(r'<sub>', 'H2', title)  # Замена <sub> на H2
+        title = re.sub(r'</sub>', '', title)
+        summary = re.sub(r'<sub>', 'H2', summary)
+        summary = re.sub(r'</sub>', '', summary)
+        # Удаление других HTML-тегов, кроме поддерживаемых Telegram
+        title = re.sub(r'<(?!b|i|a|code|pre|s|u|tg-spoiler|tg-emoji)[^>]+>', '', title)
+        summary = re.sub(r'<(?!b|i|a|code|pre|s|u|tg-spoiler|tg-emoji)[^>]+>', '', summary)
         topics = classify_by_keywords(title + " " + summary, KEYWORDS)
         text = f"📰 <b>{title}</b>\n{', '.join(topics)}\n{summary}\n{url}"
-        await bot.send_message(chat_id, text, parse_mode='HTML')
+        try:
+            await bot.send_message(chat_id, text, parse_mode='HTML')
+        except Exception as e:
+            print(f"Error sending message to {chat_id}: {e}")
+            # Отправка без HTML, если ошибка сохраняется
+            text = f"📰 {title}\n{', '.join(topics)}\n{summary}\n{url}"
+            await bot.send_message(chat_id, text)
 
 async def google_search(query, num=5):
     """Поиск в Google через Custom Search API"""
@@ -79,7 +94,6 @@ async def scrape_linkedin_posts(company):
             async with session.get(url, proxy=HTTP_PROXY) as resp:
                 if resp.status != 200:
                     print(f"Failed to fetch LinkedIn for {company}: Status {resp.status}")
-                    # Запасной вариант: поиск через Google
                     return await google_search(f'site:linkedin.com hydrogen {company}', num=3)
                 html = await resp.text()
                 soup = BeautifulSoup(html, "html.parser")
@@ -97,7 +111,6 @@ async def scrape_linkedin_posts(company):
                 return results[:5]
     except Exception as e:
         print(f"Error scraping LinkedIn for {company}: {e}")
-        # Запасной вариант: поиск через Google
         return await google_search(f'site:linkedin.com hydrogen {company}', num=3)
 
 @dp.message(Command("linkedin"))
@@ -223,7 +236,7 @@ async def cmd_companies(message: types.Message):
         summary = it.get("summary") or ""
         company = it.get("company", "")
         text = f"🏭 <b>{company}</b>\n{title}\n{summary}\n{url}"
-        await message.answer(text, parse_mode='HTML')
+        await format_and_send_list(message.chat.id, [it], limit=1)
 
 @dp.message(Command("topic"))
 async def cmd_topic(message: types.Message):
