@@ -12,7 +12,7 @@ companies:
   - Peric
   - HiiROC
   - Accelera Cummins
-  - Nel ASA
+  - Nel
   - Thyssenkrupp Nucera
   - ITM Power
   - Atawey
@@ -24,15 +24,24 @@ companies:
 # Example RSS feeds (you can extend/change)
 rss_feeds:
   - https://www.linde.com/en/news/rss.xml
+  - https://www.linde.com/news-and-media
   - https://www.airliquide.com/rss.xml
+  - https://www.airliquide.com/group/press-releases-news
+  - https://www.airliquide.com/stories
   - https://www.plugpower.com/feed/
-  - https://www.siemens-energy.com/global/en/news/rss.xml
+  - https://www.plugpower.com/media-news/
+  - https://www.plugpower.com/blog/
+  - https://www.plugpower.com/events/
+  - https://www.plugpower.com/in_the_news/
+  - https://www.siemens-energy.com/global/en/home/press-releases.html
   
   - https://fuelcellsworks.com/feed/
   - https://www.h2-view.com/feed/
+  - https://www.h2-view.com/news/all-news/
   - https://hydrogen-central.com/feed/
   - https://www.greencarcongress.com/hydrogen/index.rdf
   - https://www.hydrogeninsight.com/rss
+    - https://www.hydrogeninsight.com/
   - https://www.energyglobal.com/rss/
   - https://www.renewableenergymagazine.com/rss/hydrogen
   - https://www.offshore-energy.biz/feed/
