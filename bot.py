@@ -4,12 +4,15 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import aiohttp
+from bs4 import BeautifulSoup
 from utils import init_db, add_subscriber, remove_subscriber, list_subscribers, seen_article, is_seen, fetch_newsapi, parse_rss_feed, classify_by_keywords, deduplicate_items
 
 BASE_DIR = os.path.dirname(__file__)
 CONFIG = yaml.safe_load(open(os.path.join(BASE_DIR, "config.yaml")))
 NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")  # Добавьте в .env
+GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")  # Добавьте в .env
 
 if not BOT_TOKEN:
     raise RuntimeError("Set TELEGRAM_BOT_TOKEN in environment")
@@ -49,37 +52,37 @@ async def google_search(query, num=5):
                 })
             return results
 
-@dp.message(Command("search"))
-async def cmd_search(message: types.Message):
-    args = message.text.split(maxsplit=1)
-    if len(args) < 2:
-        await message.answer("Usage: /search hydrogen storage")
-        return
-    query = args[1]
-    await message.answer(f"🔎 Searching the web: {query}")
-    items = await google_search(query, num=6)
-    await format_and_send_list(message.chat.id, items, limit=6)
-
-async def scrape_press_releases(url):
-    """Пример простого парсинга страницы"""
+async def scrape_linkedin_posts(company):
+    """Парсинг публичных постов с LinkedIn (простой пример, настройте селекторы)"""
+    url = f"https://www.linkedin.com/company/{company.lower()}/posts/?feedView=all"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
+            if resp.status != 200:
+                return []
             html = await resp.text()
             soup = BeautifulSoup(html, "html.parser")
             results = []
-            for a in soup.select("a"):  # Настроить под конкретный сайт
-                title = a.get_text().strip()
-                link = a.get("href")
-                if title and link:
-                    results.append({"title": title, "url": link})
-            return results[:10]
+            for post in soup.find_all("div", class_="feed-shared-update-v2"):  # Пример селектора, может измениться
+                title = post.find("span", class_="feed-shared-actor__name") or "No title"
+                title = title.text.strip() if title else "No title"
+                summary = post.find("p", class_="feed-shared-text") or ""
+                summary = summary.text.strip() if summary else ""
+                link = post.find("a", class_="app-aware-link") or ""
+                link = link.get("href") if link else ""
+                if "hydrogen" in summary.lower() or "h2" in summary.lower():
+                    results.append({"title": title, "summary": summary, "url": link})
+            return results[:5]
 
-@dp.message(Command("press"))
-async def cmd_press(message: types.Message):
-    await message.answer("Fetching press releases...")
-    url = "https://www.linde.com/news"  # пример
-    items = await scrape_press_releases(url)
-    await format_and_send_list(message.chat.id, items, limit=6)
+@dp.message(Command("linkedin"))
+async def cmd_linkedin(message: types.Message):
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        await message.answer("Usage: /linkedin Linde")
+        return
+    company = args[1].lower()
+    await message.answer(f"Searching LinkedIn for {company} hydrogen news...")
+    items = await scrape_linkedin_posts(company)
+    await format_and_send_list(message.chat.id, items, limit=5)
 
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
@@ -89,7 +92,9 @@ async def cmd_start(message: types.Message):
         "/feed - latest hydrogen news\n"
         "/announcements - latest press releases from tracked RSS\n"
         "/company <name> - news about a company\n"
+        "/companies - latest news from configured companies\n"
         "/topic <keyword> - news about a topic\n"
+        "/linkedin <company> - posts from LinkedIn\n"
         "/subscribe - daily digest\n"
         "/unsubscribe - stop digest\n"
     )
@@ -131,6 +136,8 @@ async def cmd_company(message: types.Message):
     await message.answer(f"Searching news for {company}...")
     articles = await fetch_newsapi(f'hydrogen AND "{company}"', page_size=10)
     items = [{"title": a.get("title"), "summary": a.get("description"), "url": a.get("url"), "publishedAt": a.get("publishedAt")} for a in articles]
+    google_items = await google_search(f'{company} hydrogen', num=5)
+    items += google_items
     items = deduplicate_items(items)
     await format_and_send_list(message.chat.id, items, limit=6)
 
@@ -145,9 +152,9 @@ async def cmd_companies(message: types.Message):
     all_items = []
     for company in companies:
         try:
-            # поиск новостей по каждой компании
+            # Поиск в NewsAPI
             articles = await fetch_newsapi(f'hydrogen AND "{company}"', page_size=3)
-            items = [
+            news_items = [
                 {"title": a.get("title"),
                  "summary": a.get("description"),
                  "url": a.get("url"),
@@ -155,19 +162,31 @@ async def cmd_companies(message: types.Message):
                  "company": company}
                 for a in articles
             ]
-            all_items += items
+            all_items += news_items
+
+            # Поиск в Google
+            google_items = await google_search(f'{company} hydrogen', num=2)
+            for g in google_items:
+                g["company"] = company
+            all_items += google_items
+
+            # Поиск в LinkedIn (если публично доступно)
+            linkedin_items = await scrape_linkedin_posts(company)
+            for l in linkedin_items:
+                l["company"] = company
+            all_items += linkedin_items
         except Exception:
             continue
 
-    # убираем дубликаты
+    # Убираем дубликаты
     all_items = deduplicate_items(all_items)
 
     if not all_items:
         await message.answer("No recent company news found.")
         return
 
-    # формируем и отправляем
-    for it in all_items[:15]:  # ограничим, чтобы не заспамить
+    # Формируем и отправляем
+    for it in all_items[:15]:  # Ограничим, чтобы не заспамить
         title = it.get("title") or "No title"
         url = it.get("url") or ""
         summary = it.get("summary") or ""
