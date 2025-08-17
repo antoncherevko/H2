@@ -1,0 +1,54 @@
+# Configuration for H2 Hydrogen Bot
+companies:
+  - Linde
+  - Air Liquide
+  - Air Products
+  - John Cockerill
+  - Siemens Energy
+  - NEUMAN & ESSER
+  - Sunfire
+  - Plug Power
+  - Sungrow
+  - Peric
+  - HiiROC
+  - Accelera Cummins
+
+# Example RSS feeds (you can extend/change)
+rss_feeds:
+  - https://www.linde.com/en/news/rss.xml
+  - https://www.airliquide.com/rss.xml
+  - https://www.plugpower.com/feed/
+  - https://www.siemens-energy.com/global/en/news/rss.xml
+
+# Keywords / tags to detect (case-insensitive)
+keywords:
+  - hydrogen
+  - h2
+  - green hydrogen
+  - blue hydrogen
+  - electrolyzer
+  - pem
+  - alkaline
+  - soec
+  - electrolysis
+  - fuel cell
+  - fcev
+  - hrs
+  - hydrogen refueling station
+  - compression
+  - compressor
+  - storage
+  - ammonia
+  - methanol
+  - ccus
+  - investment
+  - fid
+  - final investment decision
+  - financing
+  - offtake
+  - power purchase agreement
+  - ppa
+  - project financing
+  - capacity
+  - mw
+  - gw
