@@ -14,9 +14,9 @@ BASE_DIR = os.path.dirname(__file__)
 CONFIG = yaml.safe_load(open(os.path.join(BASE_DIR, "config.yaml")))
 NEWSAPI_KEY = os.getenv("NEWSAPI_KEY")
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")  # Добавьте в .env
-GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")  # Добавьте в .env
-HTTP_PROXY = os.getenv("HTTP_PROXY")  # Добавьте в .env, например: http://username:password@proxy_ip:port
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID")
+HTTP_PROXY = os.getenv("HTTP_PROXY")
 
 if not BOT_TOKEN:
     raise RuntimeError("Set TELEGRAM_BOT_TOKEN in environment")
@@ -42,19 +42,25 @@ async def format_and_send_list(chat_id, items, limit=5):
 async def google_search(query, num=5):
     """Поиск в Google через Custom Search API"""
     if not GOOGLE_API_KEY or not GOOGLE_CSE_ID:
+        print("Google API key or CSE ID missing")
         return []
     url = f"https://www.googleapis.com/customsearch/v1?q={query}&key={GOOGLE_API_KEY}&cx={GOOGLE_CSE_ID}&num={num}"
     async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            data = await resp.json()
-            results = []
-            for item in data.get("items", []):
-                results.append({
-                    "title": item["title"],
-                    "summary": item.get("snippet"),
-                    "url": item["link"]
-                })
-            return results
+        try:
+            async with session.get(url) as resp:
+                data = await resp.json()
+                results = []
+                for item in data.get("items", []):
+                    results.append({
+                        "title": item["title"],
+                        "summary": item.get("snippet"),
+                        "url": item["link"]
+                    })
+                print(f"Google search query: {query}, results: {len(results)}")
+                return results
+        except Exception as e:
+            print(f"Error in Google search for {query}: {e}")
+            return []
 
 async def scrape_linkedin_posts(company):
     """Парсинг публичных постов с LinkedIn с задержкой и прокси"""
@@ -63,7 +69,7 @@ async def scrape_linkedin_posts(company):
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9"
     }
-    await asyncio.sleep(10)  # Задержка 10 секунды перед запросом
+    await asyncio.sleep(2)  # Задержка 2 секунды
     try:
         async with aiohttp.ClientSession(
             headers=headers,
@@ -73,7 +79,8 @@ async def scrape_linkedin_posts(company):
             async with session.get(url, proxy=HTTP_PROXY) as resp:
                 if resp.status != 200:
                     print(f"Failed to fetch LinkedIn for {company}: Status {resp.status}")
-                    return []
+                    # Запасной вариант: поиск через Google
+                    return await google_search(f'site:linkedin.com hydrogen {company}', num=3)
                 html = await resp.text()
                 soup = BeautifulSoup(html, "html.parser")
                 results = []
@@ -86,10 +93,12 @@ async def scrape_linkedin_posts(company):
                     link = link.get("href") if link else ""
                     if "hydrogen" in summary.lower() or "h2" in summary.lower():
                         results.append({"title": title, "summary": summary, "url": link})
+                print(f"LinkedIn scrape for {company}, results: {len(results)}")
                 return results[:5]
     except Exception as e:
         print(f"Error scraping LinkedIn for {company}: {e}")
-        return []
+        # Запасной вариант: поиск через Google
+        return await google_search(f'site:linkedin.com hydrogen {company}', num=3)
 
 @dp.message(Command("linkedin"))
 async def cmd_linkedin(message: types.Message):
@@ -122,6 +131,7 @@ async def cmd_feed(message: types.Message):
     await message.answer("Fetching latest news...")
     q = "hydrogen OR H2 OR ammonia OR electrolyzer OR fuel cell"
     articles = await fetch_newsapi(q, page_size=10)
+    print(f"NewsAPI query: {q}, results: {len(articles)}")
     items = []
     for a in articles:
         items.append({"title": a.get("title"), "summary": a.get("description"), "url": a.get("url"), "publishedAt": a.get("publishedAt")})
@@ -139,9 +149,10 @@ async def cmd_announcements(message: types.Message):
             for it in items:
                 it["source"] = f
             all_items += items
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error parsing RSS feed {f}: {e}")
     items = deduplicate_items(all_items)
+    print(f"RSS feeds results: {len(items)}")
     await format_and_send_list(message.chat.id, items, limit=6)
 
 @dp.message(Command("company"))
@@ -242,13 +253,14 @@ async def daily_digest():
         return
     q = "hydrogen OR electrolyzer OR fuel cell OR HRS OR ammonia OR FID OR investment OR financing"
     articles = await fetch_newsapi(q, page_size=5)
+    print(f"Daily digest NewsAPI query: {q}, results: {len(articles)}")
     items = [{"title": a.get("title"), "summary": a.get("description"), "url": a.get("url"), "publishedAt": a.get("publishedAt")} for a in articles]
     items = deduplicate_items(items)
     for s in subs:
         try:
             await format_and_send_list(s, items, limit=5)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Error sending digest to {s}: {e}")
 
 def run_scheduler():
     scheduler.add_job(daily_digest, "interval", hours=24, id="daily_digest")
