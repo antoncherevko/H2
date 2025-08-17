@@ -134,6 +134,47 @@ async def cmd_company(message: types.Message):
     items = deduplicate_items(items)
     await format_and_send_list(message.chat.id, items, limit=6)
 
+@dp.message(Command("companies"))
+async def cmd_companies(message: types.Message):
+    companies = CONFIG.get("companies", [])
+    if not companies:
+        await message.answer("No companies configured.")
+        return
+
+    await message.answer("📡 Fetching latest company news...")
+    all_items = []
+    for company in companies:
+        try:
+            # поиск новостей по каждой компании
+            articles = await fetch_newsapi(f'hydrogen AND "{company}"', page_size=3)
+            items = [
+                {"title": a.get("title"),
+                 "summary": a.get("description"),
+                 "url": a.get("url"),
+                 "publishedAt": a.get("publishedAt"),
+                 "company": company}
+                for a in articles
+            ]
+            all_items += items
+        except Exception:
+            continue
+
+    # убираем дубликаты
+    all_items = deduplicate_items(all_items)
+
+    if not all_items:
+        await message.answer("No recent company news found.")
+        return
+
+    # формируем и отправляем
+    for it in all_items[:15]:  # ограничим, чтобы не заспамить
+        title = it.get("title") or "No title"
+        url = it.get("url") or ""
+        summary = it.get("summary") or ""
+        company = it.get("company", "")
+        text = f"🏭 <b>{company}</b>\n{title}\n{summary}\n{url}"
+        await message.answer(text, parse_mode='HTML')
+
 @dp.message(Command("topic"))
 async def cmd_topic(message: types.Message):
     args = message.text.split(maxsplit=1)
