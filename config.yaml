@@ -27,7 +27,42 @@ rss_feeds:
   - https://www.airliquide.com/rss.xml
   - https://www.plugpower.com/feed/
   - https://www.siemens-energy.com/global/en/news/rss.xml
+  
+  - https://fuelcellsworks.com/feed/
+  - https://www.h2-view.com/feed/
+  - https://hydrogen-central.com/feed/
+  - https://www.greencarcongress.com/hydrogen/index.rdf
+  - https://www.hydrogeninsight.com/rss
+  - https://www.energyglobal.com/rss/
+  - https://www.renewableenergymagazine.com/rss/hydrogen
+  - https://www.offshore-energy.biz/feed/
+  - https://www.powermag.com/feed/
+  - https://cleantechnica.com/feed/
+  - https://www.smart-energy.com/feed/
+  - https://www.utilitydive.com/feeds/news/
 
+  # --- International Organizations ---
+  - https://www.iea.org/rss/news.xml
+  - https://ec.europa.eu/energy/en/news/rss.xml
+  - https://www.hydrogencouncil.com/feed/
+  - https://www.ieee.org/rss/rss.xml
+  - https://www.unido.org/rss.xml
+
+  # --- Companies: press releases ---
+  - https://www.linde.com/rss
+  - https://www.airliquide.com/rss.xml
+  - https://www.shell.com/media/news-and-media-releases/_jcr_content/par/rss.feed
+  - https://www.bp.com/en/global/corporate/news-and-insights/press-releases/_jcr_content/par/rss.feed
+  - https://www.totalenergies.com/rss
+  - https://www.siemens-energy.com/global/en/news/rss.html
+  - https://rss.sciencedirect.com/publication/science/03603199   # Int. Journal of Hydrogen Energy
+
+  # --- Tech & Science ---
+  - https://phys.org/rss-feed/energy-news/hydrogen-fuel/
+  - https://www.sciencedaily.com/rss/matter_energy/renewable_energy.xml
+  - https://www.nature.com/subjects/hydrogen-energy.rss
+  - https://news.mit.edu/rss/topic/energy
+  - https://www.energy.gov/rss/energy-news.xml
 # Keywords / tags to detect (case-insensitive)
 keywords:
   - hydrogen
