@@ -7,4 +7,3 @@ apscheduler==3.11.0
 python-dotenv==1.1.1
 beautifulsoup4==4.12.3
 PyYAML>=6.0
-linkedin-api==2.0.0a1  # Неофициальная, но работает для базового доступа; официальная - python-linkedin-v2, но старая
