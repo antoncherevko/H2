@@ -27,7 +27,7 @@ scheduler = AsyncIOScheduler()
 
 KEYWORDS = CONFIG.get("keywords", [])
 
-# Настройка клиента DeepSeek (без proxies)
+# Настройка клиента DeepSeek
 ai_client = AsyncOpenAI(
     api_key=DEEPSEEK_API_KEY,
     base_url="https://api.deepseek.com/v1"
@@ -45,7 +45,7 @@ async def query_deepseek(prompt):
     """Запрос к DeepSeek API для генерации или суммирования новостей"""
     try:
         response = await ai_client.chat.completions.create(
-            model="deepseek-chat",  # Исправленный модель для DeepSeek (general chat)
+            model="deepseek-chat",  # Общая модель для бесплатного доступа
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=500
