@@ -5,6 +5,7 @@ from aiogram.filters import Command
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import aiohttp
+import httpx
 from bs4 import BeautifulSoup
 from openai import AsyncOpenAI
 from utils import (
@@ -37,11 +38,12 @@ dp = Dispatcher()
 scheduler = AsyncIOScheduler()
 
 # === DeepSeek client ===
-ai_client = AsyncOpenAI(
-    api_key=DEEPSEEK_API_KEY,
-    base_url="https://api.deepseek.com"
-)
 
+ai_client = AsyncOpenAI(
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
+    base_url="https://api.deepseek.com",
+    http_client=httpx.AsyncClient(proxies=None)  # <-- ключевая строка
+)
 # === Keywords from config ===
 KEYWORDS = CONFIG.get("keywords", [])
 
