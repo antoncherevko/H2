@@ -27,7 +27,7 @@ scheduler = AsyncIOScheduler()
 
 KEYWORDS = CONFIG.get("keywords", [])
 
-# Настройка клиента DeepSeek
+# Настройка клиента DeepSeek (без proxies)
 ai_client = AsyncOpenAI(
     api_key=DEEPSEEK_API_KEY,
     base_url="https://api.deepseek.com/v1"
@@ -45,7 +45,7 @@ async def query_deepseek(prompt):
     """Запрос к DeepSeek API для генерации или суммирования новостей"""
     try:
         response = await ai_client.chat.completions.create(
-            model="deepseek-r1:free",  # Бесплатная модель
+            model="deepseek-chat",  # Исправленный модель для DeepSeek (general chat)
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=500
@@ -96,7 +96,7 @@ async def cmd_start(message: types.Message):
         "👋 Hello! I am H2 Hydrogen Bot.\n\n"
         "Commands:\n"
         "/feed - latest hydrogen news\n"
-        "/announcements - latest press releases from RSS\n"
+        "/announcements - latest press releases from tracked RSS\n"
         "/company <name> - news about a company\n"
         "/companies - news from configured companies\n"
         "/topic <keyword> - news about a topic\n"
@@ -108,7 +108,7 @@ async def cmd_start(message: types.Message):
 @dp.message(Command("feed"))
 async def cmd_feed(message: types.Message):
     await message.answer("Fetching latest news...")
-    prompt = "Summarize the latest hydrogen news (H2, ammonia, electrolyzer, fuel cell). Provide 6 items, each with a title, summary, and source URL."
+    prompt = "Summarize the latest hydrogen news (H2, ammonia, electrolyzer, fuel cell). Provide 6 items, each with a title, summary, and source URL in the format:\nTitle: <title>\nSummary: <summary>\nURL: <url>"
     items = await query_deepseek(prompt)
     items = deduplicate_items(items)
     await format_and_send_list(message.chat.id, items, limit=6)
@@ -138,7 +138,7 @@ async def cmd_company(message: types.Message):
         return
     company = args[1]
     await message.answer(f"Searching news for {company}...")
-    prompt = f"Summarize the latest hydrogen-related news for {company}. Provide 6 items, each with a title, summary, and source URL."
+    prompt = f"Summarize the latest hydrogen-related news for {company}. Provide 6 items, each with a title, summary, and source URL in the format:\nTitle: <title>\nSummary: <summary>\nURL: <url>"
     items = await query_deepseek(prompt)
     items = deduplicate_items(items)
     await format_and_send_list(message.chat.id, items, limit=6)
@@ -154,7 +154,7 @@ async def cmd_companies(message: types.Message):
     for company in companies:
         await asyncio.sleep(1)
         try:
-            prompt = f"Summarize the latest hydrogen-related news for {company}. Provide 3 items, each with a title, summary, and source URL."
+            prompt = f"Summarize the latest hydrogen-related news for {company}. Provide 3 items, each with a title, summary, and source URL in the format:\nTitle: <title>\nSummary: <summary>\nURL: <url>"
             items = await query_deepseek(prompt)
             for item in items:
                 item["company"] = company
@@ -182,7 +182,7 @@ async def cmd_topic(message: types.Message):
         return
     topic = args[1]
     await message.answer(f"Searching news for {topic}...")
-    prompt = f"Summarize the latest hydrogen-related news on {topic}. Provide 6 items, each with a title, summary, and source URL."
+    prompt = f"Summarize the latest hydrogen-related news on {topic}. Provide 6 items, each with a title, summary, and source URL in the format:\nTitle: <title>\nSummary: <summary>\nURL: <url>"
     items = await query_deepseek(prompt)
     items = deduplicate_items(items)
     await format_and_send_list(message.chat.id, items, limit=6)
@@ -201,7 +201,7 @@ async def daily_digest():
     subs = list_subscribers()
     if not subs:
         return
-    prompt = "Summarize today's hydrogen news (H2, ammonia, electrolyzer, fuel cell, investment). Provide 5 items, each with a title, summary, and source URL."
+    prompt = "Summarize today's hydrogen news (H2, ammonia, electrolyzer, fuel cell, investment). Provide 5 items, each with a title, summary, and source URL in the format:\nTitle: <title>\nSummary: <summary>\nURL: <url>"
     items = await query_deepseek(prompt)
     items = deduplicate_items(items)
     for s in subs:
