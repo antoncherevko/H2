@@ -29,8 +29,8 @@ KEYWORDS = CONFIG.get("keywords", [])
 
 # Настройка клиента DeepSeek
 ai_client = AsyncOpenAI(
-    api_key=DEEPSEEK_API_KEY,
-    base_url="https://api.deepseek.com/v1"
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
+    base_url="https://api.deepseek.com"
 )
 
 # Создание клавиатуры
