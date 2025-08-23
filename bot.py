@@ -57,9 +57,9 @@ async def query_deepseek(prompt):
             lines = block.split("\n")
             if len(lines) >= 3:
                 items.append({
-                    "title": lines[0].replace("**", ""),
-                    "summary": lines[1],
-                    "url": lines[2] if lines[2].startswith("http") else ""
+                    "title": lines[0].replace("**", "").strip(),
+                    "summary": lines[1].strip(),
+                    "url": lines[2].strip() if len(lines) > 2 and lines[2].startswith("http") else ""
                 })
         print(f"DeepSeek query: {prompt}, results: {len(items)}")
         return items
