@@ -7,7 +7,5 @@ apscheduler==3.11.0
 python-dotenv==1.1.1
 beautifulsoup4==4.12.3
 pyyaml==6.0.2
-openai==1.45.0   # обновлено, чтобы не падало на proxies
+openai==1.45.0
 sgmllib3k==1.0.0
-httpx==0.27.0
-httpcore==0.17.3
